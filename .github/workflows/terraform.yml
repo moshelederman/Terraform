@@ -1,0 +1,59 @@
+name: Terraform Deployment
+
+on:
+  push:
+    branches:
+      - main # תריץ רק כשדוחפים שינויים ל-main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the code from the repository
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        
+      - name: Create .env File
+        run: |
+          echo "MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}" >> project/.env
+          echo "MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}" >> project/.env
+          echo "MYSQL_USER=${{ secrets.MYSQL_USER }}" >> project/.env
+          echo "MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}" >> project/.env
+          echo "MYSQL_HOST=${{ secrets.MYSQL_HOST }}" >> project/.env
+
+      # 3. Export environment variables (to make them available for Terraform)
+      - name: Export Environment Variables
+        run: |
+          export $(cat project/.env | xargs)  
+
+      # Setup Terraform CLI
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.0 
+
+      # Initialize Terraform
+      - name: Terraform Init
+        run: terraform init
+
+      # Validate Terraform code
+      - name: Terraform Validate
+        run: terraform validate
+
+      # Plan Terraform deployment
+      - name: Terraform Plan
+        run: terraform plan
+
+      # Apply Terraform configuration (optional, זה מבצע את ה-apply בפועל)
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
+        env: # Pass variables to Terraform from the .env file
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+          MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
+          MYSQL_USER: ${{ secrets.MYSQL_USER }}
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
