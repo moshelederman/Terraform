@@ -58,7 +58,7 @@ data "aws_security_group" "existing_sg" {
 }
 
 resource "aws_security_group" "docker_sg" {
-  count       = length(data.aws_security_group.existing_sg.ids) == 0 ? 1 : 0
+  count       = data.aws_security_group.existing_sg.id != "" ? 0 : 1
   name        = "docker-sg"
   description = "Allow access to Docker container"
 
