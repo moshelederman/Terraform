@@ -47,6 +47,12 @@ jobs:
       # Plan Terraform deployment
       - name: Terraform Plan
         run: terraform plan
+        env: # Pass variables to Terraform from the .env file
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+          MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
+          MYSQL_USER: ${{ secrets.MYSQL_USER }}
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
 
       # Apply Terraform configuration (optional, זה מבצע את ה-apply בפועל)
       - name: Terraform Apply
