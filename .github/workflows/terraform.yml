@@ -19,11 +19,11 @@ jobs:
         
       - name: Create .env File
         run: |
-          echo "MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}" >> project/.env
-          echo "MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}" >> project/.env
-          echo "MYSQL_USER=${{ secrets.MYSQL_USER }}" >> project/.env
-          echo "MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}" >> project/.env
-          echo "MYSQL_HOST=${{ secrets.MYSQL_HOST }}" >> project/.env
+          echo "MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}"
+          echo "MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}" 
+          echo "MYSQL_USER=${{ secrets.MYSQL_USER }}"
+          echo "MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}"
+          echo "MYSQL_HOST=${{ secrets.MYSQL_HOST }}"
 
       # 3. Export environment variables (to make them available for Terraform)
       - name: Export Environment Variables
