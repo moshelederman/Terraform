@@ -1,80 +1,83 @@
-
-terraform {
-  required_providers {
-    docker = {
-      source  = "kreuzwerker/docker"
-      version = "~> 3.0"
-    }
-  }
+provider "aws" {
+  region = "us-east-1"  # שנה לאזור שלך
 }
 
-provider "docker" {
-  host = "npipe:////./pipe/docker_engine"
-}
+resource "aws_instance" "docker_instance" {
+  ami           = "ami-0df8c184d5f6ae949" # Amazon Linux 2 AMI
+  instance_type = "t2.micro"
 
-resource "docker_network" "app_network" {
-  name = "app_network"
-  driver = "bridge"
-}
-
-resource "docker_volume" "db_data" {
-  name = "db_data"
-}
-
-resource "docker_image" "app_image" {
-  name         = "moshelederman/project-stars"
-  keep_locally = false
-}
-
-resource "docker_container" "app" {
-  name  = "project-stars"
-  image = docker_image.app_image.id
-
-  ports {
-    internal = 5000
-    external = 5000
+  tags = {
+    Name = "docker-compose-instance"
   }
 
-  networks_advanced {
-    name = docker_network.app_network.name
-  }
+  # מפתח SSH להתחברות
+  key_name = "moshe-key"  # שנה לשם מפתח ה-SSH שלך
 
-  depends_on = [docker_container.db]
+  # גישה למכונה דרך הפורטים המתאימים
+  security_groups = [aws_security_group.docker_sg.name]
+user_data = <<-EOF
+    #!/bin/bash
+    set -e
+    sudo yum update -y
+    sudo yum install -y libxcrypt-compat
+    sudo yum install -y git
+    sudo yum install -y docker
+    sudo systemctl start docker 
+    sudo systemctl enable docker
+    sudo usermod -aG docker ec2-user
+    newgrp docker
+
+    # התקנת Docker Compose
+    sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+    sudo chmod +x /usr/local/bin/docker-compose
+    
+    # שיבוט הפרויקט מ-GitHub
+    cd /home/ec2-user
+    git clone https://github.com/moshelederman/DevOps-Project.git
+
+    # יצירת קובץ .env עם משתנים
+    echo "MYSQL_ROOT_PASSWORD=${var.mysql_root_password}" > /home/ec2-user/DevOps-Project/project/.env
+    echo "MYSQL_DATABASE=${var.mysql_database}" >> /home/ec2-user/DevOps-Project/project/.env
+    echo "MYSQL_USER=${var.mysql_user}" >> /home/ec2-user/DevOps-Project/project/.env
+    echo "MYSQL_PASSWORD=${var.mysql_password}" >> /home/ec2-user/DevOps-Project/project/.env
+    echo "MYSQL_HOST=${var.mysql_host}" >> /home/ec2-user/DevOps-Project/project/.env
+    
+    # מעבר לתיקייה והרצת Docker Compose
+    cd /home/ec2-user/DevOps-Project
+    cd project
+    docker-compose up -d  
+    EOF
 }
 
-resource "docker_image" "mysql_image" {
-  name = "mysql:8.0"
-}
+resource "aws_security_group" "docker_sg" {
+  name        = "docker-sg"
+  description = "Allow access to Docker container"
 
-resource "docker_container" "db" {
-  name  = "docker-gif-db"
-  image = docker_image.mysql_image.id
-
-  env = [
-    "MYSQL_ROOT_PASSWORD=${var.mysql_root_password}",
-    "MYSQL_DATABASE=${var.mysql_database}",
-    "MYSQL_USER=${var.mysql_user}",
-    "MYSQL_PASSWORD=${var.mysql_password}"
-  ]
-
-  ports {
-    internal = 3306
-    external = 3308
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
-  volumes {
-    container_path = "/var/lib/mysql"
-    host_path      = "/c/docker_volumes/db_data"
+   ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
-  networks_advanced {
-    name = docker_network.app_network.name
+  ingress {
+    from_port   = 5000
+    to_port     = 5000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
-  healthcheck {
-    test     = ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", var.mysql_user, "-p${var.mysql_password}"]
-    interval = "10s"
-    timeout  = "5s"
-    retries  = 3
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 }
