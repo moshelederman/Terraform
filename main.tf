@@ -49,16 +49,7 @@ user_data = <<-EOF
     EOF
 }
 
-# בדיקת Security Group קיים
-data "aws_security_group" "existing_sg" {
-  filter {
-    name   = "group-name"
-    values = ["docker-sg"]
-  }
-}
-
 resource "aws_security_group" "docker_sg" {
-  count       = data.aws_security_group.existing_sg.id != "" ? 0 : 1
   name        = "docker-sg"
   description = "Allow access to Docker container"
 
