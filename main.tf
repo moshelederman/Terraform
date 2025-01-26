@@ -1,8 +1,3 @@
-variable "mysql_root_password" {}
-variable "mysql_database" {}
-variable "mysql_user" {}
-variable "mysql_password" {}
-variable "mysql_host" {}
 provider "aws" {
   region = "us-east-1"  # שנה לאזור שלך
 }
