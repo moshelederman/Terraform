@@ -59,7 +59,7 @@ user_data = <<-EOF
 }
 
 resource "aws_security_group" "docker_sg" {
-  name        = "docker-sg"
+  name        = "terraform-sg"
   description = "Allow access to Docker container"
 
   ingress {
